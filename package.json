@@ -1,12 +1,14 @@
 {
   "name": "faucet-homework",
   "version": "1.0.0",
-  "description": "Solidity Faucet with Owned/Pausable, rate limiting and whitelist. Raw solc + ethers.js (no framework).",
+  "description": "Solidity Faucet with Owned/Pausable, rate limiting and whitelist (mapping + Merkle variants). Raw solc + ethers.js (no framework).",
   "private": true,
   "scripts": {
     "compile": "solcjs --bin --abi --optimize -o out contracts/Faucet.sol && node scripts/rename-artifacts.js",
+    "compile:merkle": "solcjs --bin --abi --optimize -o out contracts/FaucetMerkle.sol && node scripts/rename-artifacts.js",
     "deploy": "node scripts/deploy-ethers.js",
-    "interact": "node scripts/whitelist-and-test.js"
+    "interact": "node scripts/whitelist-and-test.js",
+    "merkle": "node scripts/merkle.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

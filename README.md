@@ -85,6 +85,55 @@ cast balance <FAUCET> --rpc-url "$SEPOLIA_RPC_URL" --ether
 A normal address that calls `withdraw()` twice within 20 blocks gets
 `cooldown active` on the second call; a whitelisted address gets two successes.
 
+## Bonus: Merkle whitelist (FaucetMerkle)
+
+`contracts/FaucetMerkle.sol` swaps the `whitelisted` mapping for a single
+on-chain `merkleRoot`. The whitelist itself stays off-chain; a caller proves
+membership with a Merkle proof. This keeps gas/storage constant no matter how
+large the list — the pattern used by most real airdrops.
+
+1. Generate the root and proofs (edit the address list in `scripts/merkle.js` first if needed):
+
+   ```bash
+   npm run merkle
+   ```
+
+   Prints `merkleRoot` and a ready-to-paste proof array per address.
+
+2. Compile and deploy:
+
+   ```bash
+   npm run compile:merkle
+   cast send --rpc-url "$SEPOLIA_RPC_URL" --private-key "$PRIVATE_KEY" \
+     --create "0x$(cat out/FaucetMerkle.bin)"
+   ```
+
+3. Set the root (owner only):
+
+   ```bash
+   cast send <FAUCET_MERKLE> "setMerkleRoot(bytes32)" <ROOT> \
+     --rpc-url "$SEPOLIA_RPC_URL" --private-key "$PRIVATE_KEY"
+   ```
+
+4. Withdraw:
+
+   ```bash
+   # whitelisted caller passes their proof -> 2 per window
+   cast send <FAUCET_MERKLE> "withdraw(bytes32[])" "[0x...,0x...]" \
+     --rpc-url "$SEPOLIA_RPC_URL" --private-key "$PRIVATE_KEY"
+
+   # anyone else passes an empty proof -> normal 1 per window
+   cast send <FAUCET_MERKLE> "withdraw(bytes32[])" "[]" \
+     --rpc-url "$SEPOLIA_RPC_URL" --private-key "$PRIVATE_KEY"
+   ```
+
+Check membership without spending gas:
+
+```bash
+cast call <FAUCET_MERKLE> "isWhitelisted(address,bytes32[])(bool)" <ADDR> "[0x...,0x...]" \
+  --rpc-url "$SEPOLIA_RPC_URL"
+```
+
 ## Security
 
 Never commit `.env` or your private key. Use a throwaway test account — a private
